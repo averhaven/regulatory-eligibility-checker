@@ -47,7 +47,8 @@ marketing authorization under Reg 1107/2009.
 
 ## Status
 
-Early design phase — no code yet. See [docs/PLAN.md](docs/PLAN.md) for milestones.
+Milestone 1 (schemas + mock dataset) done. See [docs/PLAN.md](docs/PLAN.md) for
+milestones.
 
 ## License
 

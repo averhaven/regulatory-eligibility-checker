@@ -19,12 +19,25 @@ Resolved:
   trace-impurity layer). Optionally mix in a small subset of formulants modeled as
   "own-manufactured" (fuller internal spec) during dataset design at Milestone 1, if that
   turns out to add a useful test case — not required.
+- **Milestone 1 scaffolding**: plain TypeScript (package.json/tsconfig/ESLint/Prettier/
+  Vitest) — no Mastra dependency yet. Mastra's Tool/Agent/Workflow/RAG primitives don't
+  appear until Milestone 2+ (loader/engine), Milestone 4 (RAG), Milestone 5 (agent step),
+  and Milestone 6 (workflow orchestration), so introducing it now would sit unused.
+
+- **Mock dataset size**: went smaller than the original 5-8/15-25 proposal — 4
+  formulations, 11 distinct formulants (reused across formulations), 14 distinct real
+  substances (4 acute toxicity, 4 skin/eye corrosion, 3 CMR, 3 hazard-irrelevant
+  controls), 4 of 14 substances (~29%) on the ambiguous path. Rationale: Milestone 1 and
+  Milestone 2 are meant to be built in a tight loop and the mock data shape is expected to
+  shift once the summation engine exists; and the ambiguous-path cases can't be verified
+  as correctly ambiguous until Milestone 3's matcher exists to run against them. Building
+  a large dataset now would mean redoing speculative work. **TODO: expand the dataset**
+  after Milestone 3 lands (matcher can confirm each ambiguous case produces its intended
+  reason code) and again at Milestone 7 (eval suite is the natural home for broader
+  adversarial/edge-case fixture coverage).
 
 Still open — confirm when the relevant milestone starts:
 
-- **Mock dataset size**: proposed 5-8 formulations, 15-25 distinct formulants, enough
-  substance reuse across formulants that formulation-wide summation is actually
-  exercised, 30-40% of formulants hitting the ambiguous path. Confirm at Milestone 1.
 - **PDF source set**: name the specific ECHA guidance documents to ingest (e.g. the CLP
   mixtures guidance document, Annex VI note-code explanations). Confirm at Milestone 4.
 
@@ -32,10 +45,15 @@ Still open — confirm when the relevant milestone starts:
 
 Each milestone is intended to be implementable as its own separate piece of work.
 
-### 1. Schemas + mock dataset
+### 1. Schemas + mock dataset — done
 Zod schemas for formulations, formulants, and declared substances. Hand-author the mock
 dataset — deliberately include some clean matches and several ambiguous-path cases across
 the 3 v1 hazard classes. Confirm final dataset size here (see Decisions).
+
+Delivered: `src/schemas/` (substance/formulant/formulation Zod schemas), `src/data/mock/`
+(4 fictional formulations, 11 reused formulants, 14 real substances with 4 tagged
+ambiguous-match cases), Vitest coverage validating the dataset against the schemas.
+Dataset-expansion TODO tracked under Decisions above.
 
 ### 2. CLP reference loader + deterministic summation engine + unit tests
 Parse the trimmed ECHA C&L Inventory/Annex VI export. One pure function per hazard class
@@ -77,4 +95,5 @@ numbers.
 
 ## Status
 
-Not started — see Milestone 1.
+Milestone 1 done. Milestone 2 (CLP reference loader + deterministic summation engine) is
+next.
