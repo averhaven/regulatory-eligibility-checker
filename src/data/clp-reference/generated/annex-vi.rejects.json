@@ -1,0 +1,30 @@
+[
+  {
+    "rowNumber": 658,
+    "indexNumber": "028-018-00-4",
+    "column": "L",
+    "rawText": "oral: ATE = 1098.0 mg/kg bw (tetrahydrate)",
+    "reason": "duplicate oral ATE line"
+  },
+  {
+    "rowNumber": 4036,
+    "indexNumber": "649-175-00-0",
+    "column": "G/H",
+    "rawText": "G: Flam. Gas 1\nPress. Gas\nCarc. 1B\nH: H220\nH350\nH340",
+    "reason": "hazard class/H-code line count mismatch (2 vs 3)"
+  },
+  {
+    "rowNumber": 4037,
+    "indexNumber": "649-176-00-6",
+    "column": "G/H",
+    "rawText": "G: Flam. Gas 1\nPress. Gas\nCarc. 1B\nH: H220\nH350\nH340",
+    "reason": "hazard class/H-code line count mismatch (2 vs 3)"
+  },
+  {
+    "rowNumber": 4175,
+    "indexNumber": "649-315-00-0",
+    "column": "G/H",
+    "rawText": "G: Carc. 1B\nH: H350\nH304",
+    "reason": "hazard class/H-code line count mismatch (1 vs 2)"
+  }
+]
