@@ -3,12 +3,11 @@ import type { Formulant } from '../../schemas/formulant.js';
 /**
  * Shared fictional formulants, reused across multiple mock formulations below so
  * formulation-wide summation (same substance arriving via different formulants, or the
- * same formulant reused in different products) is actually exercised once Milestone 2's
- * engine exists.
+ * same formulant reused in different products) is actually exercised by the engine.
  *
  * Substance identities (name + CAS) are real, public facts — only the formulant/product
- * names and the declared compositions are fictional. See docs/PLAN.md Milestone 1 for the
- * intended ambiguous-match test cases called out below.
+ * names and the declared compositions are fictional. Individual formulants below are
+ * annotated with the ambiguous-match case they're designed to exercise.
  */
 
 export const chlorpyrifosConcentrate: Formulant = {
@@ -17,8 +16,8 @@ export const chlorpyrifosConcentrate: Formulant = {
   percentOfProduct: 0, // overridden per-formulation
   substances: [
     // Ambiguous-match case: declared under a historical trade name, no CAS given —
-    // forces the Milestone 3 matcher to fall back to name/synonym lookup
-    // ("synonym mismatch").
+    // forces the substance matcher to fall back to name/synonym lookup
+    // ("synonym mismatch"). TODO: matcher not yet implemented.
     { name: 'Dursban Technical', concentration: 45 },
     { name: 'Xylene', casNumber: '1330-20-7', concentration: 30 },
   ],
@@ -46,9 +45,11 @@ export const preservativePackage: Formulant = {
   name: 'Preservative Stabilizer Package',
   percentOfProduct: 0,
   substances: [
-    // Clean match (CMR, single-substance threshold). Deliberately also present in
-    // biocideReserveBlend below so a single formulation can carry the same CMR
-    // substance via two different formulants, exercising cross-formulant summation.
+    // Ambiguous-match case: Annex VI gives formaldehyde's Carc. 1B/Muta. 2 classifications
+    // no substance-specific concentration limit, so the generic Annex I limit must be
+    // resolved ("missing SCL"). Deliberately also present in biocideReserveBlend below so
+    // a single formulation can carry the same CMR substance via two different formulants,
+    // exercising cross-formulant summation.
     { name: 'Formaldehyde', casNumber: '50-00-0', concentration: 2 },
     { name: 'Water', casNumber: '7732-18-5', concentration: 90 },
   ],
@@ -70,9 +71,8 @@ export const acidPhAdjuster: Formulant = {
   percentOfProduct: 0,
   substances: [
     { name: 'Sulfuric acid', casNumber: '7664-93-9', concentration: 20 },
-    // Ambiguous-match case: Annex VI lists the hazard class for acetic acid without a
-    // substance-specific concentration limit, so the generic Annex I limit must be
-    // resolved ("missing SCL").
+    // Clean match: Annex VI gives acetic acid its own substance-specific concentration
+    // limits (90/25/10%), so no generic-limit fallback is needed here.
     { name: 'Acetic acid', casNumber: '64-19-7', concentration: 15 },
   ],
 };
