@@ -3,9 +3,10 @@ import { z } from 'zod';
 /**
  * CAS Registry Number, e.g. "7664-93-9". Optional on a declared substance: a
  * fictional SDS may omit it, which is itself a deliberate ambiguous-match test case
- * (forces the Milestone 3 matcher to fall back to name/synonym lookup).
+ * (forces the substance matcher to fall back to name/synonym lookup — TODO: matcher
+ * not yet implemented).
  */
-const casNumberPattern = /^\d{2,7}-\d{2}-\d$/;
+export const casNumberPattern = /^\d{2,7}-\d{2}-\d$/;
 
 export const DeclaredSubstanceSchema = z.object({
   /** Name as declared on the fictional SDS — may be a trade name/synonym rather than

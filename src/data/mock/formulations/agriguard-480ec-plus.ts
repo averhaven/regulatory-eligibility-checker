@@ -12,7 +12,7 @@ import {
  * Fictional variant of AgriGuard 480EC with added corrosive cleaning adjuncts.
  * Reuses the cypermethrin formulant from the base product and exercises skin/eye
  * corrosion straight-additivity (sulfuric acid + acetic acid + sodium/potassium
- * hydroxide), including the acetic acid "missing SCL" ambiguous case.
+ * hydroxide).
  */
 export const agriguard480ecPlus: Formulation = {
   id: 'form-agriguard-480ec-plus',
