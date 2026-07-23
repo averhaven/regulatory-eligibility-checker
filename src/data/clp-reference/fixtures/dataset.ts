@@ -1,5 +1,4 @@
 import type { ClpReferenceEntry } from '../../../schemas/clp-reference.js';
-import type { CompoundedSubstance } from '../../../engine/shared/types.js';
 import { parseClpExportRow, type RawClpExportRow } from '../loader.js';
 
 /**
@@ -116,12 +115,15 @@ const rawRows: RawClpExportRow[] = [
     ],
   },
   {
-    // No current harmonised CMR classification: the historical Carc. 2 entry (index
-    // 022-006-00-2) was annulled by the CJEU in 2025 and no longer appears in Annex VI.
-    indexNumber:
-      'none (no current harmonised entry; historical 022-006-00-2 annulled 2025-08-01)',
-    casNumber: '13463-67-7',
-    name: 'Titanium dioxide',
+    indexNumber: '015-011-00-6',
+    casNumber: '7664-38-2',
+    name: 'Phosphoric acid',
+    skinEyeCorrosion: [
+      { classification: 'skinCorr1B', specificConcentrationLimit: 25 },
+      { classification: 'skinIrrit2', specificConcentrationLimit: 10 },
+      { classification: 'eyeIrrit2', specificConcentrationLimit: 10 },
+    ],
+    noteCodes: ['B'],
   },
   {
     indexNumber: 'none (no Annex VI entry, CAS 7732-18-5)',
@@ -141,25 +143,3 @@ const rawRows: RawClpExportRow[] = [
 ];
 
 export const clpReferenceDataset: ClpReferenceEntry[] = rawRows.map(parseClpExportRow);
-
-/**
- * Exact CAS-then-name lookup, no synonym/fuzzy matching or ambiguity handling.
- *
- * TODO: this is test scaffolding standing in for the real substance matcher - it is NOT
- * that matcher, and must not be imported by anything described as "the matcher" later.
- */
-export function lookupByCasOrName(
-  substance: CompoundedSubstance,
-): ClpReferenceEntry | undefined {
-  if (substance.casNumber !== undefined) {
-    const byCas = clpReferenceDataset.find(
-      (entry) => entry.casNumber === substance.casNumber,
-    );
-    if (byCas !== undefined) {
-      return byCas;
-    }
-  }
-  return clpReferenceDataset.find(
-    (entry) => entry.name.toLowerCase() === substance.name.toLowerCase(),
-  );
-}

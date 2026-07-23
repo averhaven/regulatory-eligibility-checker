@@ -1,6 +1,5 @@
 import type { Formulation } from '../../schemas/formulation.js';
-import type { ClpReferenceEntry } from '../../schemas/clp-reference.js';
-import type { CompoundedSubstance, MatchedSubstance } from './types.js';
+import type { CompoundedSubstance, MatchedSubstance, SubstanceMatch } from './types.js';
 
 /**
  * Decomposes a formulation into its declared substances, compounding each substance's
@@ -53,15 +52,12 @@ export function compoundFormulation(formulation: Formulation): CompoundedSubstan
 }
 
 /**
- * Joins each compounded substance to its CLP reference entry via a caller-supplied lookup.
- * Tests currently supply a simple exact CAS-or-name lookup (`lookupByCasOrName`) as
- * documented scaffolding.
- *
- * TODO: replace `lookupByCasOrName` wholesale with a real synonym/ambiguity-aware matcher.
+ * Joins each compounded substance to its match result against a CLP reference dataset, via a
+ * caller-supplied matcher - see `buildSubstanceMatcher` in `../matcher/substance-matcher.js`.
  */
 export function attachReferences(
   compounded: CompoundedSubstance[],
-  lookup: (substance: CompoundedSubstance) => ClpReferenceEntry | undefined,
+  match: (substance: CompoundedSubstance) => SubstanceMatch,
 ): MatchedSubstance[] {
-  return compounded.map((substance) => ({ ...substance, reference: lookup(substance) }));
+  return compounded.map((substance) => ({ ...substance, ...match(substance) }));
 }

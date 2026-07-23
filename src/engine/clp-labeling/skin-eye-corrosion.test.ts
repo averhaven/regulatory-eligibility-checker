@@ -22,7 +22,14 @@ function matched(
     skinEyeCorrosion: { classifications },
     cmr: { classifications: [] },
   };
-  return { key: name, name, totalConcentration, contributions: [], reference };
+  return {
+    key: name,
+    name,
+    totalConcentration,
+    contributions: [],
+    reference,
+    ambiguityReasons: [],
+  };
 }
 
 describe('classifySkinEyeCorrosion', () => {

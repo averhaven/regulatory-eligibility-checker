@@ -17,6 +17,7 @@ function matched(
     name,
     totalConcentration,
     contributions: [],
+    ambiguityReasons: [],
     reference:
       oral === undefined
         ? undefined

@@ -45,10 +45,12 @@ describe('compoundFormulation', () => {
     ]);
   });
 
-  it('does not merge a synonym-declared substance with its CAS-bearing declaration (TODO: no substance matcher yet)', () => {
+  it('does not merge a synonym-declared substance with its CAS-bearing declaration', () => {
     // "Dursban Technical" (no CAS, chlorpyrifosConcentrate) and any CAS-bearing chlorpyrifos
-    // declaration would real-world be the same substance, but compoundFormulation only does
-    // exact CAS-or-name grouping - it must not silently merge them.
+    // declaration would real-world be the same substance, but compoundFormulation groups
+    // before matching runs, on exact CAS-or-name only - it must not silently merge them. This
+    // remains a known gap even with Milestone 4's real matcher, since matching happens after
+    // this grouping step, not before it.
     const compounded = compoundFormulation(agriguard480ec);
     const dursban = compounded.find((s) => s.name === 'Dursban Technical');
     expect(dursban).toBeDefined();
@@ -71,7 +73,10 @@ describe('attachReferences', () => {
       ],
     });
 
-    const [matched] = attachReferences(compounded, () => undefined);
+    const [matched] = attachReferences(compounded, () => ({
+      reference: undefined,
+      ambiguityReasons: [],
+    }));
     expect(matched?.reference).toBeUndefined();
   });
 });

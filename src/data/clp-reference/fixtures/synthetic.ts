@@ -2,11 +2,11 @@ import { parseClpExportRow } from '../loader.js';
 
 /**
  * A fictional, engine-tests-only reference entry, NOT linked to any mock formulant. It
- * stands in for a real note-conditioned Annex VI entry (e.g. the historical titanium
- * dioxide particle-size note, or the real man-made-vitreous-fibres Notes Q/R entry) so the
- * engine's "apply the classification's SCL and surface its note codes in provenance,
- * without ever interpreting the note text" behaviour has test coverage even though the
- * current real 14-substance dataset has no live note-conditioned case.
+ * stands in for a real note-conditioned Annex VI entry (e.g. the real man-made-vitreous-
+ * fibres Notes Q/R entry) so the engine's "apply the classification's SCL and surface its
+ * note codes in provenance, without ever interpreting the note text" behaviour has test
+ * coverage even though the current real 14-substance dataset has no live note-conditioned
+ * case.
  */
 export const syntheticNoteConditionedEntry = parseClpExportRow({
   indexNumber: 'synthetic-test-only-000-000-00-0',

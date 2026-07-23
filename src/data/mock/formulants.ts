@@ -16,8 +16,8 @@ export const chlorpyrifosConcentrate: Formulant = {
   percentOfProduct: 0, // overridden per-formulation
   substances: [
     // Ambiguous-match case: declared under a historical trade name, no CAS given —
-    // forces the substance matcher to fall back to name/synonym lookup
-    // ("synonym mismatch"). TODO: matcher not yet implemented.
+    // forces the substance matcher to fall back to name/synonym lookup, which finds nothing
+    // ("synonym mismatch").
     { name: 'Dursban Technical', concentration: 45 },
     { name: 'Xylene', casNumber: '1330-20-7', concentration: 30 },
   ],
@@ -92,22 +92,31 @@ export const boricMineralCarrier: Formulant = {
   name: 'Micronized Mineral Carrier (Boric-Fortified)',
   percentOfProduct: 0,
   substances: [
-    // Ambiguous-match case: real Annex VI covers boric acid via a boron-compounds
-    // group heading rather than its own standalone row ("grouping entry").
+    // Ambiguous-match case: real Annex VI covers boric acid via a named group entry
+    // (index 005-007-00-2) shared with a second CAS-numbered identity, rather than its own
+    // standalone row ("grouping entry"). That same real entry also carries Note 11 and
+    // publishes no SCL on its reproductive-toxicity classification, so matching against the
+    // real Annex VI dataset additionally surfaces "relevant note code" and "missing SCL" for
+    // this substance, all 3 reasons at once — see the "against the real Annex VI dataset"
+    // describe block in src/engine/matcher/substance-matcher.test.ts.
+    // The small fixture only models one row (with an explicit SCL) for it, so none of this
+    // triple-reason behavior is visible there.
     { name: 'Boric acid', casNumber: '10043-35-3', concentration: 8 },
     { name: 'Kaolin', casNumber: '1332-58-7', concentration: 60 },
   ],
 };
 
-export const antiCakingBase: Formulant = {
-  id: 'fnt-anticaking-base',
-  name: 'Anti-Caking Powder Base',
+export const phosphoricConditioningAgent: Formulant = {
+  id: 'fnt-phosphoric-conditioning',
+  name: 'Phosphoric Acid Conditioning Blend',
   percentOfProduct: 0,
   substances: [
-    // Ambiguous-match case: real Annex VI entry only applies to a specific physical
-    // form (respirable powder above a particle-size threshold, per Note 10) — resolving
-    // whether it applies requires reading the note ("relevant note code").
-    { name: 'Titanium dioxide', casNumber: '13463-67-7', concentration: 5 },
+    // Ambiguous-match case: real Annex VI entry (index 015-011-00-6) carries Note B, whose
+    // specific meaning the engine doesn't interpret (opaque, future RAG territory) —
+    // resolving whether/how it modifies the classification requires reading the note
+    // ("relevant note code"). A real, current, single-row entry on both the small fixture and
+    // the real Annex VI dataset, so this case is consistent either way.
+    { name: 'Phosphoric acid', casNumber: '7664-38-2', concentration: 5 },
     { name: 'Kaolin', casNumber: '1332-58-7', concentration: 70 },
   ],
 };
