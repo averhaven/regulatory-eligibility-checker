@@ -26,14 +26,37 @@ export interface CompoundedSubstance {
 }
 
 /**
- * A `CompoundedSubstance` joined to its CLP reference entry. `reference: undefined` means
- * no reference entry was found at all - for acute toxicity this specifically means
- * "unknown toxicity" (feeds the >10%-unknown ATEmix correction). There is no analogous
- * correction for skin/eye or CMR: an unmatched substance simply contributes zero there.
+ * Why a substance match needs review before the deterministic path is trusted wholesale.
+ * `synonymMismatch` covers both "declared name/synonym not found" and "no Annex VI entry
+ * exists at all for this CAS/name" - the matcher can't distinguish those, so they share a
+ * code. A substance can carry more than one reason at once (e.g. a grouping entry that also
+ * carries a note code), so these are collected as an array, never a single prioritized value.
  */
-export interface MatchedSubstance extends CompoundedSubstance {
-  reference: ClpReferenceEntry | undefined;
+export type AmbiguityReasonCode =
+  'synonymMismatch' | 'groupingEntry' | 'missingScl' | 'relevantNoteCode';
+
+export interface AmbiguityReason {
+  code: AmbiguityReasonCode;
+  detail: string;
 }
+
+/**
+ * The result of matching one `CompoundedSubstance` against a CLP reference dataset.
+ * `reference: undefined` means no reference entry was found at all - for acute toxicity this
+ * specifically means "unknown toxicity" (feeds the >10%-unknown ATEmix correction). There is
+ * no analogous correction for skin/eye or CMR: an unmatched substance simply contributes zero
+ * there. `ambiguityReasons` is additive provenance on top of that: empty means a clean match
+ * safe for the deterministic path; non-empty flags why this substance would need to branch to
+ * the future LLM+RAG path instead (Milestone 7) - it doesn't change how today's hazard-class
+ * math treats `reference`.
+ */
+export interface SubstanceMatch {
+  reference: ClpReferenceEntry | undefined;
+  ambiguityReasons: AmbiguityReason[];
+}
+
+/** A `CompoundedSubstance` joined to its match result against the CLP reference dataset. */
+export interface MatchedSubstance extends CompoundedSubstance, SubstanceMatch {}
 
 /** A `MatchedSubstance` restated with the role it played in a specific hazard verdict. */
 export interface ContributingSubstance {

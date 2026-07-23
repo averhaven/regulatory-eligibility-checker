@@ -38,8 +38,8 @@ Resolved:
   concentration — a ban on the substance's own CLP classification, not a concentration-
   weighted mixture threshold. This is a genuinely different mechanism from CLP Annex I's
   concentration-limit/ATEmix math (already built, see Milestone 2) — that math decides
-  whether the *finished formulation* itself must carry a hazard label; this decides whether
-  a *co-formulant substance* may be used at all. v1 implements only points 1-3 of the
+  whether the _finished formulation_ itself must carry a hazard label; this decides whether
+  a _co-formulant substance_ may be used at all. v1 implements only points 1-3 of the
   Annex's 10 criteria (CMR 1A/1B) — see the TODO below for points 4-10. (See Milestone 3.)
 - **Vector store for RAG**: local/embedded store (no external service to stand up).
 - **Formulant composition depth**: declared composition only (no below-SDS-threshold
@@ -51,17 +51,26 @@ Resolved:
   appear until Milestone 2+ (loader/engine), Milestone 5 (RAG), Milestone 6 (agent step),
   and Milestone 7 (workflow orchestration), so introducing it now would sit unused.
 
+- **Substance matcher's "missing SCL" ambiguity reason scope (Milestone 4)**: CMR
+  classifications only, not skin/eye. Most Annex VI entries lack an SCL at all — SCLs are
+  the exception, not the rule — and skin/eye's GCL fallback is already fully deterministic
+  (Milestone 2's `classifySkinEyeCorrosion`), so flagging it there too would mark most of
+  the real 3,740-entry dataset ambiguous and defeat the point of a clean/ambiguous split.
+  The one designed mock case for this reason code (formaldehyde) is CMR-shaped anyway.
 - **Mock dataset size**: went smaller than the original 5-8/15-25 proposal — 4
   formulations, 11 distinct formulants (reused across formulations), 14 distinct real
-  substances (4 acute toxicity, 4 skin/eye corrosion, 3 CMR, 3 hazard-irrelevant
-  controls), 4 of 14 substances (~29%) on the ambiguous path. Rationale: Milestone 1 and
+  substances (4 acute toxicity, 5 skin/eye corrosion — sulfuric acid, acetic acid, sodium
+  hydroxide, potassium hydroxide, phosphoric acid — 2 CMR — formaldehyde, boric acid — 3
+  hazard-irrelevant controls), 4 of 14 substances (~29%) on the ambiguous path. Rationale: Milestone 1 and
   Milestone 2 are meant to be built in a tight loop and the mock data shape is expected to
   shift once the summation engine exists; and the ambiguous-path cases can't be verified
   as correctly ambiguous until Milestone 4's matcher exists to run against them. Building
-  a large dataset now would mean redoing speculative work. **TODO: expand the dataset**
-  after Milestone 4 lands (matcher can confirm each ambiguous case produces its intended
-  reason code) and again at Milestone 8 (eval suite is the natural home for broader
-  adversarial/edge-case fixture coverage).
+  a large dataset now would mean redoing speculative work. Milestone 4 confirmed each of the
+  4 designed ambiguous cases produces its intended reason code against the real dataset (see
+  the "against the real Annex VI dataset" describe block in
+  `src/engine/matcher/substance-matcher.test.ts`) — **TODO: still expand the dataset size**
+  itself at Milestone 8 (eval suite is the natural home for broader adversarial/edge-case
+  fixture coverage).
 
 Still open — confirm when the relevant milestone starts:
 
@@ -91,10 +100,17 @@ Still open — confirm when the relevant milestone starts:
   from `classifyCmr`'s existing GCL table in `cmr.ts` (a different, unrelated CLP Annex I
   mixture-classification limit — e.g. 0.3%/3.0% for reproductive toxicity 1A/1B/2, not
   0.1%).
+- **TODO: known-safe substance allowlist (Milestone 4.5, not yet built).** Under the
+  closed-world invariant, a substance genuinely absent from Annex VI (e.g. water — present in
+  nearly every real formulation) currently resolves as ambiguous/unmatched, the same as a
+  substance nobody has checked. The user considers a curated, provenance-tracked exception
+  list non-optional for the app to be usable on real formulations, but explicitly deferred it
+  as separate work rather than building it alongside Milestone 4's matcher — see Milestone 4.5
+  below.
 - **PDF source set**: name the specific ECHA guidance documents to ingest (e.g. the CLP
   mixtures guidance document, Annex VI note-code explanations). Confirm at Milestone 5. Note
-  the note-code *reference letters/numbers* (A, B, C…, 1, 2, 3…) are now captured on real
-  entries by Milestone 2.5's ingestion (`ClpReferenceEntry.noteCodes`), but their *meaning*
+  the note-code _reference letters/numbers_ (A, B, C…, 1, 2, 3…) are now captured on real
+  entries by Milestone 2.5's ingestion (`ClpReferenceEntry.noteCodes`), but their _meaning_
   is not — that text lives in CLP Annex VI Part 1 itself, which should probably be one of
   the documents in this source set, not just the general mixtures guidance.
 
@@ -107,26 +123,15 @@ examples) is unaffected, but the dataset itself must be relabeled as a fixture, 
 ingestion work described in new Milestone 2.5 below still needs to happen before this is
 used against any formulation outside the mock set.
 
-Milestone 2 follow-ups — the mock dataset's Milestone 1 ambiguous-case framing has drifted
-from current real regulatory fact for 2 of its 14 substances; fix at the Milestone 4/8
-dataset-expansion point rather than mid-Milestone-2:
+Milestone 2 follow-ups — the mock dataset's Milestone 1 ambiguous-case framing had drifted
+from current real regulatory fact for 1 of its 14 substances. Now resolved:
 
-- **Titanium dioxide's CMR entry is stale.** The historical Carc. 2 classification (index
-  022-006-00-2, particle-size-conditioned via a Note — the mock dataset's designed
-  "relevant note code" ambiguous CMR case) was annulled by the CJEU on 2025-08-01 and no
-  longer exists in Annex VI. Per explicit project decision, `src/data/clp-reference/`
-  models titanium dioxide with no CMR classification (reflects current law) rather than the
-  stale entry or a forced substitute substance — no real, current, EU-harmonised CMR entry
-  exists among plausible pesticide inert ingredients (crystalline silica, talc, etc. aren't
-  EU-harmonised despite being hazardous elsewhere). This leaves the dataset with only 2 live
-  CMR ambiguity flavors (formaldehyde clean-match, boric acid grouping-entry) instead of the
-  originally intended 3. Needs either a real substitute substance or a reframed 3rd
-  ambiguity flavor when the dataset is next expanded.
-- **Acetic acid's "missing SCL" framing is stale.** Real Annex VI does publish an SCL for
-  acetic acid (Skin Corr. 1A ≥90%, Corr. 1B 25–90%, Irrit. 2 10–25%) — the Milestone 1
-  comment on `acidPhAdjuster` in `src/data/mock/formulants.ts` assumed no SCL exists.
-  `src/data/clp-reference/fixtures/dataset.ts` models the real SCL. Needs a corrected comment or a
-  different substance to actually exercise the "missing SCL" ambiguity reason code.
+- **Acetic acid's "missing SCL" framing was stale — already resolved before Milestone 4
+  started.** Real Annex VI does publish an SCL for acetic acid (Skin Corr. 1A ≥90%,
+  Corr. 1B 25–90%, Irrit. 2 10–25%); `src/data/clp-reference/fixtures/dataset.ts` models the
+  real SCL and `acidPhAdjuster`'s comment in `src/data/mock/formulants.ts` was corrected to
+  say "Clean match" — found already fixed when Milestone 4 reviewed this section, no action
+  needed.
 - **Formaldehyde's real acute-toxicity classification is
   deliberately not modeled** in `src/data/clp-reference/fixtures/dataset.ts`, to keep the dataset's
   documented "4 acute toxicity substances" count accurate (chlorpyrifos, cypermethrin,
@@ -153,7 +158,7 @@ Dataset-expansion TODO tracked under Decisions above.
 
 ### 2. CLP labeling: reference loader + deterministic summation engine + unit tests — done
 
-The CLP/GHS labeling feature — decides what hazard label the *finished formulation* must
+The CLP/GHS labeling feature — decides what hazard label the _finished formulation_ must
 carry (see Decisions above for how this differs from Milestone 3's EU sale eligibility
 feature). Parse the trimmed ECHA C&L Inventory/Annex VI export. One pure function per hazard class
 (acute toxicity, skin/eye corrosion, CMR). Vitest coverage against known worked examples,
@@ -172,8 +177,8 @@ stepwise resolution, `classifyCmr` — single-substance threshold, no cross-subs
 summation, and `classifyFormulation` composing all three). 40 Vitest cases, including both
 of ECHA's "Guidance on the Application of the CLP Criteria" v6.0 worked examples (§3.1.5.3,
 Examples 11 and 12a) and end-to-end runs against all 4 real mock formulations. See the
-Decisions/follow-ups above for 2 known Milestone-1-mock-data staleness issues surfaced while
-researching real reference data (titanium dioxide's annulled CMR entry, acetic acid's SCL).
+Decisions/follow-ups above for a known Milestone-1-mock-data staleness issue surfaced while
+researching real reference data (acetic acid's SCL).
 
 ### 2.5. Real Annex VI ingestion pipeline — done
 
@@ -257,11 +262,61 @@ unintentional-impurity concentration exemption (0.1% w/w default, or the substan
 CLP SCL) is not yet implemented — the current code bans on any nonzero declared
 concentration, stricter than the real rule.
 
-### 4. Substance matcher + ambiguity detection
+### 4. Substance matcher + ambiguity detection — done
 
 CAS-number match, falling back to name/synonym match. Flags ambiguity with a reason code
 (synonym mismatch, grouping entry, missing SCL, relevant note code) so the workflow knows
 when to branch to the LLM+RAG path.
+
+Delivered: `src/engine/shared/types.ts` (`AmbiguityReasonCode`, `AmbiguityReason`,
+`SubstanceMatch`; `MatchedSubstance` gains `ambiguityReasons`, additive alongside the
+existing `reference` — no changes needed to any of the 3 hazard classifiers or the
+eligibility checker, which still only read `.reference`); `src/engine/matcher/
+substance-matcher.ts` (`buildSubstanceMatcher` — CAS match, falling back to exact
+case-insensitive name match, then flags grouping-entry siblings via a shared
+`indexNumber`, note codes, and missing-SCL-on-CMR-classifications against the resolved
+candidate; a substance can carry more than one reason at once, collected as an array, not a
+single prioritized code). `attachReferences`/`classifyFormulation` retyped to take a
+`match` function instead of the old `lookupByCasOrName` stand-in, which is now deleted;
+`FormulationVerdict` gains `ambiguousSubstances`, the flat list a future workflow
+(Milestone 7) would branch on.
+
+No fuzzy-matching library was added — resolving what an unrecognized name/synonym actually
+refers to stays deferred to the future LLM+RAG path (Milestone 5/6); this matcher only
+detects that a name didn't resolve (`synonymMismatch`), never guesses at it.
+
+Two-tier test coverage, deliberately: `src/engine/matcher/substance-matcher.test.ts` uses
+small purpose-built synthetic entries for each reason code (the 14-row fixture has only one
+row per substance by original Milestone 1/2 design, so it can't exercise grouping-entry
+detection — a case needing sibling rows — at all), plus a nested "against the real Annex VI
+dataset" describe block in that same file for real-dataset spot checks.
+`src/engine/formulation.test.ts`'s `classifyFormulation.ambiguousSubstances` describe block
+(fixture-based) shows 3 of the 4 designed flavors (Dursban Technical → synonymMismatch,
+Formaldehyde → missingScl, phosphoric acid → relevantNoteCode — boric acid's grouping-entry
+needs a sibling row the fixture doesn't have); the "against the real Annex VI dataset" block
+in `substance-matcher.test.ts` runs the same 4 designed mock substances against the real
+`annexViDataset` and confirms each produces its intended real-world reason code — including
+the discovery that boric acid's real entry fires all 3 of groupingEntry, relevantNoteCode,
+and missingScl simultaneously.
+
+### 4.5. Known-safe substance allowlist
+
+Not yet built. A curated, explicitly human-reviewed, provenance-tracked list of substances
+(starting with water) that are confirmed non-hazardous despite having no Annex VI entry —
+checked by the matcher *after* an Annex VI miss, before flagging `synonymMismatch`, so they
+resolve as a confirmed-clean match instead of escalating to the future LLM+RAG path. Motivated
+directly by real-world usability: water alone appears in nearly every mock formulation already
+(and would in essentially any real one), and routing it through ambiguity resolution every
+single time is both wasteful and not what a human reviewer would actually want flagged.
+
+Must stay a deliberate, curated exception list with its own recorded justification per entry
+(who/when/why confirmed non-hazardous, and on what basis, given Annex VI's absence doesn't by
+itself mean non-hazardous — see the closed-world invariant, `docs/ARCHITECTURE.md`) — never a
+default "absence means safe" change to the matcher's own behavior, which would silently
+reintroduce the exact false-negative risk the invariant exists to prevent for every other
+substance. Positioned between Milestone 4 (extends its matcher with one more lookup tier) and
+Milestone 5 (reduces how often the RAG path gets hit for cases that don't need it) — mirrors
+the existing "X.5" convention used for Milestone 2.5.
 
 ### 5. PDF ingestion + RAG store
 
@@ -298,7 +353,7 @@ numbers.
 
 ## Status
 
-Milestones 1, 2, 2.5, and 3 done. Milestone 2's reference dataset was a fixture, not real
+Milestones 1, 2, 2.5, 3, and 4 done. Milestone 2's reference dataset was a fixture, not real
 ingested data (see the correction above); Milestone 2.5 supplied the real one
 (`src/data/clp-reference/generated/annex-vi.ts`, 3,740 entries from ATP23), ingested from
 the vendored Excel export via `src/data/clp-reference/ingestion/`. Milestone 3 added the
@@ -306,5 +361,9 @@ EU sale eligibility verdict (the OK/not-OK gate) that was missing until now — 
 'eligible' means" under Decisions — as its own feature, distinct from Milestone 2's CLP/GHS
 labeling. Two follow-ups remain open on Milestone 3: points 4-10 of the Annex, and the
 1107/2009 Annex III concentration-exemption threshold (see "Still open" above). Milestone 4
-(substance matcher) is next — it can now be built and evaluated against the real dataset's
-breadth, not just the 14-row fixture.
+replaced the `lookupByCasOrName` test stand-in with the real substance matcher
+(`buildSubstanceMatcher`), flagging ambiguity with a reason code and resolving the mock
+dataset's stale acetic acid ambiguous-case framing along the way — see Milestone 4 above and
+the corrected Milestone 2 follow-ups. Milestone 4.5 (known-safe substance allowlist) is logged
+as a real, non-optional future need but not yet built. Milestone 5 (PDF ingestion + RAG store)
+is next.

@@ -25,7 +25,14 @@ function matched(
     skinEyeCorrosion: { classifications: [] },
     cmr: { classifications },
   };
-  return { key: name, name, totalConcentration, contributions: [], reference };
+  return {
+    key: name,
+    name,
+    totalConcentration,
+    contributions: [],
+    reference,
+    ambiguityReasons: [],
+  };
 }
 
 describe('classifyCmr', () => {
@@ -95,6 +102,7 @@ describe('classifyCmr', () => {
         totalConcentration: 6,
         contributions: [],
         reference: syntheticNoteConditionedEntry,
+        ambiguityReasons: [],
       },
     ]);
     expect(verdict.classifications).toHaveLength(1);

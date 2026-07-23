@@ -24,7 +24,14 @@ function matched(
     skinEyeCorrosion: { classifications: [] },
     cmr: { classifications },
   };
-  return { key: name, name, totalConcentration, contributions: [], reference };
+  return {
+    key: name,
+    name,
+    totalConcentration,
+    contributions: [],
+    reference,
+    ambiguityReasons: [],
+  };
 }
 
 describe('classifyCoFormulantEligibility', () => {
@@ -99,6 +106,7 @@ describe('classifyCoFormulantEligibility', () => {
         totalConcentration: 5,
         contributions: [],
         reference: undefined,
+        ambiguityReasons: [],
       },
     ]);
     expect(verdict.eligible).toBe(true);

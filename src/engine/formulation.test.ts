@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { classifyFormulation } from './index.js';
-import { lookupByCasOrName } from '../data/clp-reference/fixtures/dataset.js';
+import { buildSubstanceMatcher, classifyFormulation } from './index.js';
+import { clpReferenceDataset } from '../data/clp-reference/fixtures/dataset.js';
 import {
   agriguard480ec,
   agriguard480ecPlus,
@@ -10,14 +10,22 @@ import {
 
 /**
  * End-to-end tests running the real deterministic pipeline (compound -> match -> classify)
- * against the real mock formulations, via the exact-CAS-or-name lookup that stands in for
- * the real substance matcher (TODO: not yet implemented). Every expected number below was
- * hand-derived from the real mock data's concentrations and the real CLP reference data in
+ * against the real mock formulations, via the real substance matcher built over the small
+ * hand-authored fixture dataset. Every expected number below was hand-derived from the real
+ * mock data's concentrations and the real CLP reference data in
  * src/data/clp-reference/fixtures/dataset.ts during implementation.
+ *
+ * The fixture has only one row per substance by original Milestone 1/2 design, so it cannot
+ * exercise grouping-entry/note-code ambiguity detection - see the "against the real Annex VI
+ * dataset" describe block in ../matcher/substance-matcher.test.ts for the same designed
+ * ambiguous substances matched against the real Annex VI dataset, which does have that
+ * structure.
  */
+const match = buildSubstanceMatcher(clpReferenceDataset);
+
 describe('classifyFormulation (end-to-end against real mock formulations)', () => {
   it('agriguard480ec: acute tox Category 4 via unknown-correction, CMR Carc.1B via cross-formulant formaldehyde aggregation', () => {
-    const verdict = classifyFormulation(agriguard480ec, lookupByCasOrName);
+    const verdict = classifyFormulation(agriguard480ec, match);
 
     // "Dursban Technical" (chlorpyrifos synonym, no CAS) is 15.75% of product and matches
     // nothing in the reference dataset -> unknown toxicity, feeds the >10%-unknown
@@ -52,7 +60,7 @@ describe('classifyFormulation (end-to-end against real mock formulations)', () =
   });
 
   it('agriguard480ecPlus: dilution keeps acute tox unclassified, straight additivity triggers Skin Corr. 1A', () => {
-    const verdict = classifyFormulation(agriguard480ecPlus, lookupByCasOrName);
+    const verdict = classifyFormulation(agriguard480ecPlus, match);
 
     // Cypermethrin (2%, Cat 4) + potassium hydroxide (1%, Cat 4, its real dual
     // classification) are both Category 4, but too dilute for the ATEmix arithmetic to
@@ -75,17 +83,18 @@ describe('classifyFormulation (end-to-end against real mock formulations)', () =
   });
 
   it('fieldclearDust: acidPhAdjuster at low concentration stays below every skin/eye threshold', () => {
-    const verdict = classifyFormulation(fieldclearDust, lookupByCasOrName);
+    const verdict = classifyFormulation(fieldclearDust, match);
 
     // No oral-acute-toxicity-classified substance is present at all.
     expect(verdict.acuteToxicity.category).toBeNull();
     expect(verdict.acuteToxicity.ateMixMgPerKg).toBeNull();
 
-    // Sulfuric acid (1%) + acetic acid (0.75%) - both SCL-bearing and both well below
-    // threshold, by design.
+    // Sulfuric acid (1%), acetic acid (0.75%), and phosphoric acid (1%, via
+    // phosphoricConditioningAgent) all contribute to the skinCorr1B/skinIrrit2 SCL-additivity
+    // sums, but every sum stays well below 1 at these concentrations.
     expect(verdict.skinEyeCorrosion.classifications).toEqual([]);
 
-    // Titanium dioxide (1%) has no CMR classification in the reference dataset.
+    // Phosphoric acid has no CMR classification in the reference dataset.
     expect(verdict.cmr.classifications).toEqual([]);
 
     // No CMR-1A/1B-classified substance present at all.
@@ -93,7 +102,7 @@ describe('classifyFormulation (end-to-end against real mock formulations)', () =
   });
 
   it('fieldclearGranular: a single dilute Category 3 substance stays unclassified; boric acid stays below its real SCL', () => {
-    const verdict = classifyFormulation(fieldclearGranular, lookupByCasOrName);
+    const verdict = classifyFormulation(fieldclearGranular, match);
 
     // Methanol alone at 4.75% (Cat 3): ATEmix ~= 2105 mg/kg, above the 2000 cutoff -
     // genuinely unclassified, and the single-substance "same category" shortcut must not
@@ -116,5 +125,49 @@ describe('classifyFormulation (end-to-end against real mock formulations)', () =
     // banned co-formulants regardless of their below-SCL/at-GCL concentrations.
     expect(verdict.eligible).toBe(false);
     expect(verdict.coFormulantEligibility.bannedCoFormulants).toHaveLength(2);
+  });
+});
+
+/**
+ * What the matcher actually flags against the small fixture, as opposed to the real Annex VI
+ * dataset (see the "against the real Annex VI dataset" describe block in
+ * ../matcher/substance-matcher.test.ts). The fixture has only one row per substance by
+ * design, so grouping-entry ambiguity can't show up here even for substances that do carry it
+ * in real life (boric acid) - relevantNoteCode is still visible here, since phosphoric acid's
+ * note code is modeled directly on its single fixture row, not dependent on a sibling.
+ */
+describe('classifyFormulation.ambiguousSubstances (against the small fixture)', () => {
+  it('agriguard480ec: flags Dursban Technical (synonymMismatch) and Formaldehyde (missingScl)', () => {
+    const verdict = classifyFormulation(agriguard480ec, match);
+
+    const byName = new Map(verdict.ambiguousSubstances.map((s) => [s.name, s]));
+    expect(byName.get('Dursban Technical')?.ambiguityReasons.map((r) => r.code)).toEqual([
+      'synonymMismatch',
+    ]);
+    expect(byName.get('Formaldehyde')?.ambiguityReasons.map((r) => r.code)).toEqual([
+      'missingScl',
+    ]);
+    expect(verdict.ambiguousSubstances).toHaveLength(2);
+  });
+
+  it('fieldclearDust: flags phosphoric acid (relevantNoteCode) consistently, same as the real dataset', () => {
+    const verdict = classifyFormulation(fieldclearDust, match);
+
+    const byName = new Map(verdict.ambiguousSubstances.map((s) => [s.name, s]));
+    expect(byName.get('Phosphoric acid')?.ambiguityReasons.map((r) => r.code)).toEqual([
+      'relevantNoteCode',
+    ]);
+  });
+
+  it('fieldclearGranular: boric acid is a clean match against the fixture (no sibling row); formaldehyde is missingScl', () => {
+    const verdict = classifyFormulation(fieldclearGranular, match);
+
+    expect(
+      verdict.ambiguousSubstances.find((s) => s.name === 'Boric acid'),
+    ).toBeUndefined();
+    const byName = new Map(verdict.ambiguousSubstances.map((s) => [s.name, s]));
+    expect(byName.get('Formaldehyde')?.ambiguityReasons.map((r) => r.code)).toEqual([
+      'missingScl',
+    ]);
   });
 });
